@@ -1,0 +1,56 @@
+SPG 5:
+En driver anvender et eksternt interrupt til at blive notificeret om hvorvidt en ekstern sensor har data klar til at blive læst. En user-space applikation ønsker at læse disse data via driveren når de er klar.
+Beskriv mekanismen for interrupt håndtering i klartekst. (2-8 linier)
+
+Løsningsforslag:
+Interruptet fra den eksterne sensor registreres vha register_irq(). Ved dette funktionskald konfigureres desuden om interruptet er kant- eller level triggered, ligesom at interrupt service rutinen angives. User space programmet laver en blokerende læsning vha read() noden i filsystemet som repræsenterer sensoren. Read metoden i driveren inkluderer et kald til wait_event_interruptible(), som derved gør read kaldet blokerende, dvs den kaldende tråd bliver lagt til at sove indtil den vækkes i driveren. Når der sker et sensor event køres interrupt service rutinen. Denne sætter et globalt flag og vækker read metoden ved hjælp at wake_up_interruptible(). Read metoden vågner, evaluerer sit flag og returnerer.
+
+Tre Kriterier:
+- Brug af wait_event- /wake_up
+- Forstå blokerende kald
+- Forstå sammenhæng mellem eksterne event og interrupt service rutine
+
+
+SPG 8:
+En Linux device driver til GPIO skal implementeres. Device driveren skal benyttes til fire GPIO inputs (130-133). Hver input repræsenteres ved et minor nummer (0-3) i filsystemet. Du skal implementere read metoden. Denne starter som følger:
+ssize_t mygpio_read(struct file *filep, char __user *buf, size_t count, loff_t *f_pos)
+ {
+
+int minor = MINOR(filep->f_dentry->d_inode->i_rdev);
+
+...
+}
+
+Løsningsforslag:
+1 #DEFINE KEY_NR 130
+2
+3 ssize_t mygpio_read(struct file *filep, char __user *buf, size_t count, loff_t *f_pos)
+4 {
+5 char readBuf [ BOOTKEY_MAXLEN ];
+6 int len , result =-1, err;
+7 int minor = MINOR (filep ->f_dentry ->d_inode -> i_rdev );
+8
+9 result = gpio_get_value ( KEY_NR +minor );
+10
+11 len = sprintf (readBuf , "%d", result );
+12
+13 len ++;
+14 err = copy_to_user (buf , &readBuf , len);
+15
+16 if(err)
+17 goto copy_to_user_error ;
+18
+19 * f_pos += len;
+20
+21 return len;
+22
+23 // Error handling
+24 copy_to_user_error :
+25 printk ( KERN_ALERT "Boot key driver unable to copy to user. Error code %d", err);
+26 return (- EFAULT );
+
+Tre Kriterier:
+- Brug af minor nummer til at vælge gpio input til gpio_get_value
+- Brug af copy_to_user()
+- Fejlhåndtering
+

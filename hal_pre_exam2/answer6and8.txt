@@ -1,0 +1,44 @@
+Q7:
+Request irq forespørger en interrupt linje. Parametre: 
+unsigned int irq - Dette er den ønskede interrupt linje (fx fra gpio to irq(...)). 
+irq handler t handler - Dette er handleren der skal kaldes ved interrupt, dvs. interrupt service routinen (ISR). 
+unsigned long flags - Dette er interrupt flags, som fx IRQF TRIGGER RISING—IRQF TRIGGER FALLING. Disse flag vil fx angive
+at den skal trigge på både rising og falling edge. 
+const char *name - Dette er et simpelt ascii-navn for devicet der forespørger interrupt linjen. Kan ses i /proc/interrupts
+void *dev - Denne pointer kan anvendes til at associere en interrupt linje med et device's data. Ved at angive en pointer til et device's data her kan man når ISR rutinen kaldes (pga at der er sket et interrupt), få adgang til disse data, da ISR netop medtager denne pointer som sin no to parameter.
+
+Q9:
+1 int EepromIsReady ( struct spi_device * EepDev )
+2 {
+3 // First check if device is valid
+4 if (! EepDev )
+5 return -ENODEV ;
+6
+7 // Init SPI connection
+8 Eepdev -> bits_per_word = 8;
+9 spi_setup ( Eepdev );
+10
+11 // Init messsage to send
+12 struct spi_transfer t[2]; // 2 times 8 bit
+13 struct spi_message msg;// One SPI transaction
+14
+15 memset (&t, 0, sizeof (t));// Fill with zero (zero -init)
+16 spi_message_init (&msg);// Init msg
+17 msg.spi = Eeepdev ; // Assign msg to Eepdev
+18 uint8_t cmd =  5;   // Equal to 0101b, Read Status Register
+19 t[0]. tx_buf = &cmd;
+20 t[0]. len = 1;
+21 spi_message_add_tail (&t[0], &msg);
+22 uint8_t readStatusRegister ;
+23 t[1]. rx_buf = &readStatusRegister ;
+24 t[1]. len = 1;
+25 spi_message_add_tail (&t[1], &msg);
+26
+27 // Blocking SPI Transmission
+28 spi_sync (EepDev , &msg);
+29
+30 if (readStatusRegister & 1)// 1 indicates write cycle in progress
+31 return 0;
+32 else
+33 return 1;
+34 }

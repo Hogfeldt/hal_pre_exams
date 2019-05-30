@@ -1,0 +1,1 @@
+Da både adc_get og fifo_put er non-blocking kan dette udføresi interrupt service rutinen, mens read blot returnerer resultatet af fifo_get().
